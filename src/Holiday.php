@@ -5,7 +5,6 @@ namespace Lemo\Date;
 use DateInterval;
 use DateTime;
 use Laminas\Stdlib\ArrayUtils;
-use Locale;
 use Traversable;
 
 use function array_key_exists;
@@ -50,9 +49,6 @@ class Holiday
         if (null !== $options) {
             if (array_key_exists('country', $options)) {
                 $this->setCountry($options['country']);
-            } else {
-                $country = Locale::getRegion(Locale::getDefault());
-                $this->setCountry($country);
             }
         }
     }
@@ -169,6 +165,15 @@ class Holiday
      */
     public function getCountry(): ?string
     {
+        if (empty($this->country)) {
+            throw new Exception\InvalidArgumentException(
+                sprintf(
+                    '%s expects a "country" option; none given',
+                    self::class
+                )
+            );
+        }
+
         return $this->country;
     }
 
