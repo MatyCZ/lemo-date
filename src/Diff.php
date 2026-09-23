@@ -1,56 +1,50 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Lemo\Date;
 
+use DateMalformedStringException;
 use DateTime;
-use Lemo\Date\Exception;
+use DateTimeInterface;
 
 class Diff
 {
     protected ?DiffInterval $interval = null;
 
     public function __construct(
-        protected DateTime|string|int $dateStart,
-        protected DateTime|string|int|null $dateEnd = null,
+        protected DateTimeInterface|string $dateStart,
+        protected DateTimeInterface|string|null $dateEnd = null,
         protected bool $includeEndDay = false,
-        protected bool $includeEveryStarted = false
-    ) {
-    }
+        protected bool $includeEveryStarted = false,
+    ) {}
 
     /**
      * Calculate day difference
      *
-     * @throws \Exception
+     * @throws Exception\RuntimeException
+     * @throws DateMalformedStringException
      */
     private function calculate(): void
     {
-        if ($this->dateEnd instanceof DateTime) {
-            $dateEnd = clone $this->dateEnd;
-        } else {
-            $dateEnd = new DateTime($this->dateEnd);
-        }
-
-        if ($this->dateStart instanceof DateTime) {
-            $dateStart = clone $this->dateStart;
-        } else {
-            $dateStart = new DateTime($this->dateStart);
-        }
+        $dateStart = $this->toDateTime($this->dateStart);
+        $dateEnd = $this->toDateTime($this->dateEnd);
 
         if ($dateStart->format('YmdHis') > $dateEnd->format('YmdHis')) {
             throw new Exception\RuntimeException(
-                'Start date is greater than end date'
+                'Start date is greater than end date',
             );
         }
 
-        // Pokud jsou oba datumy shodne, vratime jeden den
-        if ($dateStart == $dateEnd) {
+        // Pri zapocteni kazdeho nacateho obdobi je shodne datum jeden nacaty den
+        if ($this->includeEveryStarted && $dateStart == $dateEnd) {
             $interval = new DiffInterval();
             $interval->days++;
 
             $this->interval = $interval;
         } else {
             // Pridame jeden den navic
-            if (true === $this->includeEndDay) {
+            if ($this->includeEndDay) {
                 $dateEnd->modify('+1 day');
             }
 
@@ -62,13 +56,13 @@ class Diff
             $interval->months = ($diff->y * 12) + $diff->m;
             $interval->years = $diff->y;
 
-            if (true === $this->includeEveryStarted) {
-                if ($dateStart->format('m') >= $dateEnd->format('m') && $dateStart->format('d') > $dateEnd->format('d')) {
-                    $interval->months++;
-                }
-                if ($dateStart->format('m') > $dateEnd->format('m')) {
-                    $interval->years++;
-                }
+            // Kalendarni rozdil, takze se zapocita kazdy nacaty mesic/rok a vysledek
+            // nikdy neni mensi nez pocet celych mesicu/let
+            if ($this->includeEveryStarted) {
+                $years = (int) $dateEnd->format('Y') - (int) $dateStart->format('Y');
+
+                $interval->months = ($years * 12) + (int) $dateEnd->format('n') - (int) $dateStart->format('n');
+                $interval->years = $years;
             }
 
             $this->interval = $interval;
@@ -76,11 +70,24 @@ class Diff
     }
 
     /**
-     * @throws \Exception
+     * @throws DateMalformedStringException
+     */
+    private function toDateTime(DateTimeInterface|string|null $date): DateTime
+    {
+        // Mutable copy, so modify() never touches the caller's object
+        if ($date instanceof DateTimeInterface) {
+            return DateTime::createFromInterface($date);
+        }
+
+        return new DateTime($date ?? 'now');
+    }
+
+    /**
+     * @throws DateMalformedStringException
      */
     public function getDays(): int
     {
-        if (null === $this->interval) {
+        if (!$this->interval instanceof DiffInterval) {
             $this->calculate();
         }
 
@@ -88,11 +95,11 @@ class Diff
     }
 
     /**
-     * @throws \Exception
+     * @throws DateMalformedStringException
      */
     public function getMonths(): int
     {
-        if (null === $this->interval) {
+        if (!$this->interval instanceof DiffInterval) {
             $this->calculate();
         }
 
@@ -100,11 +107,11 @@ class Diff
     }
 
     /**
-     * @throws \Exception
+     * @throws DateMalformedStringException
      */
     public function getYears(): int
     {
-        if (null === $this->interval) {
+        if (!$this->interval instanceof DiffInterval) {
             $this->calculate();
         }
 

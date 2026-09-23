@@ -1,12 +1,16 @@
 {
   "name": "matycz/lemo-date",
-  "description": "Set of date utilities for Laminas applications",
+  "description": "Date utilities: difference between dates in days, months and years, and Czech and Slovak public holidays with their history",
   "license": "BSD-3-Clause",
   "type": "library",
   "keywords": [
-    "laminas",
+    "czech",
     "date",
-    "holidays"
+    "diff",
+    "easter",
+    "holidays",
+    "public holidays",
+    "slovak"
   ],
   "homepage": "https://github.com/MatyCZ/lemo-date",
   "authors": [
@@ -19,17 +23,25 @@
       "Lemo\\Date\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "LemoTest\\Date\\": "tests/"
+    }
+  },
   "require": {
     "ext-calendar": "*",
-    "ext-intl": "*",
-    "laminas/laminas-stdlib": "^3.0",
-    "php": "^8.0"
+    "php": "^8.3"
   },
   "require-dev": {
-    "friendsofphp/php-cs-fixer": "~3.9.0",
-    "phpstan/phpstan": "~1.8.0"
+    "friendsofphp/php-cs-fixer": "~3.95.0",
+    "phpstan/phpstan": "~2.2.0",
+    "phpunit/phpunit": "^12.5",
+    "rector/rector": "^2.6"
   },
   "scripts": {
-    "static-analysis": "phpstan analyse -c phpstan.neon --memory-limit=1G"
+    "rector": "rector process",
+    "rector-check": "rector process --dry-run",
+    "static-analysis": "phpstan analyse -c phpstan.neon --memory-limit=1G",
+    "test": "phpunit"
   }
 }
